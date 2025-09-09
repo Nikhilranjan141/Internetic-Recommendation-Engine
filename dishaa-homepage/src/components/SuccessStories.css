@@ -1,0 +1,108 @@
+.success-stories {
+  padding: 100px 20px;
+  background-color: #fff;
+  text-align: center;
+}
+
+.success-stories h2 {
+  font-size: 36px;
+  font-weight: bold;
+  color: #122c54;
+  margin-bottom: 15px;
+}
+
+.success-stories .subtitle {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 50px;
+}
+
+.testimonials {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.testimonial-card {
+  background: #f9fafc;
+  border-radius: 16px;
+  padding: 30px;
+  width: 320px;
+  box-shadow: 0px 6px 16px rgba(0,0,0,0.08);
+  transition: transform 0.3s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.testimonial-card:hover {
+  transform: translateY(-5px);
+}
+
+.testimonial-card::before {
+  content: "\201C";
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 60px;
+  color: #ff7b29;
+  opacity: 0.2;
+  font-family: Georgia, serif;
+}
+
+.rating-top {
+  color: #ff7b29;
+  font-size: 18px;
+  margin-bottom: 15px;
+  order: 1;
+}
+
+.quote {
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+  order: 2;
+}
+
+.quote p {
+  font-size: 16px;
+  color: #555;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+.student-info {
+  margin-bottom: 15px;
+  order: 3;
+  margin-top: auto;
+}
+
+.student-info h4 {
+  font-size: 18px;
+  font-weight: bold;
+  color: #122c54;
+  margin-bottom: 5px;
+}
+
+.student-info p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 3px;
+}
+
+.state-name {
+  color: #ff7b29 !important;
+  font-weight: 500;
+}
+
+.rating {
+  color: #ff7b29;
+  font-size: 18px;
+}
+
+.student-info p:last-child {
+  color: #ff7b29 !important;
+  font-weight: 500;
+  margin-top: 5px;
+}
