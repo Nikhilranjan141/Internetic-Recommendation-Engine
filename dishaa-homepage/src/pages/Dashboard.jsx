@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { UserContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
@@ -6,6 +6,21 @@ import "./Dashboard.css";
 const Dashboard = () => {
   const { user } = useContext(UserContext);
   const navigate = useNavigate();
+  const [profileCompletion, setProfileCompletion] = useState(0); // Start at 0%
+  const [profileImage, setProfileImage] = useState(null);
+
+  // Load profile completion and profile image from localStorage on component mount
+  useEffect(() => {
+    const savedCompletion = localStorage.getItem('profileCompletion');
+    if (savedCompletion) {
+      setProfileCompletion(parseInt(savedCompletion));
+    }
+
+    const savedProfileImage = localStorage.getItem('profileImage');
+    if (savedProfileImage) {
+      setProfileImage(savedProfileImage);
+    }
+  }, []);
 
   const handleBrowseInternships = (e) => {
     e.preventDefault();
@@ -20,6 +35,18 @@ const Dashboard = () => {
   const handleDashboardNavigation = (e) => {
     e.preventDefault();
     navigate('/dashboard');
+  };
+
+  // Function to get user initials for profile icon
+  const getInitials = () => {
+    if (user?.name) {
+      const names = user.name.split(' ');
+      if (names.length > 1) {
+        return `${names[0].charAt(0)}${names[1].charAt(0)}`.toUpperCase();
+      }
+      return names[0].charAt(0).toUpperCase();
+    }
+    return "👤";
   };
 
   return (
@@ -45,7 +72,13 @@ const Dashboard = () => {
           </nav>
           <div className="nav-icons">
             <button className="icon-btn">🔔</button>
-            <button className="icon-btn">👤</button>
+            <div className="profile-icon" onClick={handleProfileNavigation} style={{cursor: 'pointer'}}>
+              {profileImage ? (
+                <img src={profileImage} alt="Profile" className="profile-icon-image" />
+              ) : (
+                <span className="profile-icon-initials">{getInitials()}</span>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -63,9 +96,9 @@ const Dashboard = () => {
           <h3>Complete Your Profile</h3>
           <div className="progress-container">
             <div className="progress-bar">
-              <div className="progress-fill" style={{width: '75%'}}></div>
+              <div className="progress-fill" style={{width: `${profileCompletion}%`}}></div>
             </div>
-            <span className="progress-text">75% complete - Add skills and preferences to get better recommendations</span>
+            <span className="progress-text">{profileCompletion}% complete - Add skills and preferences to get better recommendations</span>
           </div>
         </div>
 
