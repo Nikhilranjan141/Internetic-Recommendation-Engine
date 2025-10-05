@@ -1,0 +1,81 @@
+/* src/components/FloatingChatbot/SkillQuickActions.css */
+.skill-quick-actions {
+  margin: 15px 0;
+  padding: 15px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+}
+
+.skill-quick-actions h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  text-align: center;
+}
+
+.skill-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.skill-action-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.skill-action-btn:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.skill-action-icon {
+  font-size: 20px;
+  text-align: center;
+}
+
+.skill-action-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: #333;
+  text-align: center;
+}
+
+.skill-action-desc {
+  font-size: 10px;
+  color: #666;
+  text-align: center;
+}
+
+.current-skills {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.current-skills p {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .skill-actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .skill-action-btn {
+    padding: 8px;
+  }
+}

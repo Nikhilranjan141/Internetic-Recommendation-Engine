@@ -3,19 +3,16 @@ import { UserContext } from "../context/UserContext";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 
-// Profile completion calculation function
 const calculateProfileCompletion = (profileData) => {
   let completedFields = 0;
   let totalFields = 0;
 
-  // Basic info fields (5 fields)
   const basicInfoFields = ['firstName', 'lastName', 'email', 'phone', 'location'];
   totalFields += basicInfoFields.length;
   completedFields += basicInfoFields.filter(field => 
     profileData[field] && profileData[field].toString().trim() !== ''
   ).length;
 
-  // Education fields (4 fields)
   const educationFields = ['degree', 'university', 'year', 'cgpa'];
   totalFields += educationFields.length;
   completedFields += educationFields.filter(field => 
@@ -24,43 +21,36 @@ const calculateProfileCompletion = (profileData) => {
     profileData.education[field] !== 'Select year'
   ).length;
 
-  // Skills (1 field - count as complete if at least one skill)
   totalFields += 1;
   if (profileData.skills && profileData.skills.length > 0) {
     completedFields += 1;
   }
 
-  // About section (1 field)
   totalFields += 1;
   if (profileData.about && profileData.about.trim() !== '') {
     completedFields += 1;
   }
 
-  // Preferences fields (3 fields)
   const preferenceFields = ['sector', 'type', 'duration'];
   totalFields += preferenceFields.length;
   completedFields += preferenceFields.filter(field => 
     profileData.preferences[field] && profileData.preferences[field].trim() !== ''
   ).length;
 
-  // Social media fields (3 fields)
   const socialMediaFields = ['linkedin', 'github', 'portfolio'];
   totalFields += socialMediaFields.length;
   completedFields += socialMediaFields.filter(field => 
     profileData.socialLinks && profileData.socialLinks[field] && profileData.socialLinks[field].trim() !== ''
   ).length;
 
-  // Resume field (1 field)
   totalFields += 1;
   if (profileData.resume) {
     completedFields += 1;
   }
 
-  // Calculate percentage
   return Math.round((completedFields / totalFields) * 100);
 };
 
-// Achievement tracking function
 const checkAchievements = (profileData, completionPercentage) => {
   return {
     profileCompleter: completionPercentage >= 100,
@@ -122,13 +112,26 @@ const Profile = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [resumeUrl, setResumeUrl] = useState(null);
 
-  // Feedback system states
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [feedbackType, setFeedbackType] = useState("suggestion");
 
-  // Load profile data from localStorage on component mount
+  const [marketTrends, setMarketTrends] = useState({
+    reactJobs: '+32%',
+    averageSalary: '₹8.2L',
+    remoteJobs: '1.2K+',
+    hiringCompanies: '250+'
+  });
+
+  const [notifications, setNotifications] = useState([
+    { id: 1, message: '🎉 Your profile is now in top 15%!', type: 'success' },
+    { id: 2, message: '📊 5 new jobs match your skills', type: 'info' }
+  ]);
+
+  const [showRecruiterView, setShowRecruiterView] = useState(false);
+  const [recruiterViewTab, setRecruiterViewTab] = useState('overview');
+
   useEffect(() => {
     const savedProfileImage = localStorage.getItem('profileImage');
     if (savedProfileImage) {
@@ -142,7 +145,6 @@ const Profile = () => {
         const parsedData = JSON.parse(savedProfileData);
         setProfileData(parsedData);
         
-        // Check if resume data exists and create URL for viewing
         if (parsedData.resume && parsedData.resume.data) {
           const blob = new Blob([new Uint8Array(parsedData.resume.data)], { type: parsedData.resume.type });
           const url = URL.createObjectURL(blob);
@@ -168,13 +170,21 @@ const Profile = () => {
       setProfileCompletion(parseInt(savedCompletion));
     }
 
-    // Store user name in localStorage for other components to access
     if (user?.name) {
       localStorage.setItem('userName', user.name);
     }
+
+    const trendInterval = setInterval(() => {
+      setMarketTrends(prev => ({
+        ...prev,
+        remoteJobs: `${Math.floor(Math.random() * 500) + 1000}+`,
+        hiringCompanies: `${Math.floor(Math.random() * 50) + 200}+`
+      }));
+    }, 5000);
+
+    return () => clearInterval(trendInterval);
   }, [user]);
 
-  // Calculate profile completion and achievements whenever profileData changes
   useEffect(() => {
     const completion = calculateProfileCompletion(profileData);
     setProfileCompletion(completion);
@@ -182,10 +192,13 @@ const Profile = () => {
     const newAchievements = checkAchievements(profileData, completion);
     setAchievements(newAchievements);
     
-    // Store in localStorage
-    localStorage.setItem('profileCompletion', completion.toString());
-    localStorage.setItem('profileData', JSON.stringify(profileData));
-    localStorage.setItem('achievements', JSON.stringify(newAchievements));
+    try {
+      localStorage.setItem('profileCompletion', completion.toString());
+      localStorage.setItem('profileData', JSON.stringify(profileData));
+      localStorage.setItem('achievements', JSON.stringify(newAchievements));
+    } catch (error) {
+      console.error('LocalStorage error:', error);
+    }
   }, [profileData]);
 
   const handleInputChange = (e) => {
@@ -236,6 +249,12 @@ const Profile = () => {
         skills: [...prev.skills, newSkill.trim()]
       }));
       setNewSkill("");
+      
+      setNotifications(prev => [...prev, {
+        id: Date.now(),
+        message: `✅ Skill "${newSkill.trim()}" added successfully!`,
+        type: 'success'
+      }]);
     }
   };
 
@@ -267,6 +286,12 @@ const Profile = () => {
         setPhotoPreview(imageData);
         setProfileImage(imageData);
         localStorage.setItem('profileImage', imageData);
+        
+        setNotifications(prev => [...prev, {
+          id: Date.now(),
+          message: '📸 Profile photo updated successfully!',
+          type: 'success'
+        }]);
       };
       reader.readAsDataURL(file);
     }
@@ -285,7 +310,6 @@ const Profile = () => {
         return;
       }
 
-      // Read the file and store it as ArrayBuffer for later retrieval
       const reader = new FileReader();
       reader.onload = (e) => {
         const arrayBuffer = e.target.result;
@@ -301,10 +325,15 @@ const Profile = () => {
           }
         }));
         
-        // Create a URL for viewing the resume
         const blob = new Blob([arrayBuffer], { type: file.type });
         const url = URL.createObjectURL(blob);
         setResumeUrl(url);
+        
+        setNotifications(prev => [...prev, {
+          id: Date.now(),
+          message: '📄 Resume uploaded successfully!',
+          type: 'success'
+        }]);
       };
       reader.readAsArrayBuffer(file);
     }
@@ -332,7 +361,6 @@ const Profile = () => {
       resume: null
     }));
     
-    // Clean up the URL object
     if (resumeUrl) {
       URL.revokeObjectURL(resumeUrl);
       setResumeUrl(null);
@@ -345,7 +373,11 @@ const Profile = () => {
 
   const handleSaveProfile = () => {
     setIsEditing(false);
-    alert("Profile saved successfully!");
+    setNotifications(prev => [...prev, {
+      id: Date.now(),
+      message: '💾 Profile saved successfully!',
+      type: 'success'
+    }]);
   };
 
   const handleEditProfile = () => {
@@ -358,16 +390,13 @@ const Profile = () => {
     }
   };
 
-  // Function to handle feedback submission
   const handleFeedbackSubmit = (e) => {
     e.preventDefault();
     if (feedback.trim()) {
-      // In a real app, you would send this to your backend
       console.log("Feedback submitted:", { type: feedbackType, message: feedback });
       setFeedbackSubmitted(true);
       setFeedback("");
       
-      // Hide feedback section after 2 seconds
       setTimeout(() => {
         setShowFeedback(false);
         setFeedbackSubmitted(false);
@@ -396,9 +425,267 @@ const Profile = () => {
     navigate('/browse-internships');
   };
 
+  const getMissingSkills = (requiredSkills) => {
+    return requiredSkills.filter(skill => 
+      !profileData.skills.some(userSkill => 
+        userSkill.toLowerCase().includes(skill.toLowerCase())
+      )
+    );
+  };
+
+  const handleLaunchRecruiterView = () => {
+    setShowRecruiterView(true);
+  };
+
+  const handleAddAISkill = (skill) => {
+    if (!profileData.skills.includes(skill)) {
+      setProfileData(prev => ({
+        ...prev,
+        skills: [...prev.skills, skill]
+      }));
+      
+      setNotifications(prev => [...prev, {
+        id: Date.now(),
+        message: `🤖 AI suggestion: "${skill}" added to your skills!`,
+        type: 'info'
+      }]);
+    }
+  };
+
+  const SmartNotifications = () => (
+    <div className="smart-notifications">
+      {notifications.slice(-3).map(notification => (
+        <div key={notification.id} className={`notification ${notification.type}`}>
+          {notification.message}
+        </div>
+      ))}
+    </div>
+  );
+
+  const RecruiterView = () => {
+    const [animationStage, setAnimationStage] = useState(0);
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setAnimationStage(prev => (prev + 1) % 4);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }, [animationStage]);
+
+    const renderOverview = () => (
+      <div className="recruiter-content">
+        <div className="recruiter-metric pulse">
+          <span>🚀 Profile Score</span>
+          <div className="metric-value">92/100</div>
+          <div className="score-meter">
+            <div className="score-fill" style={{width: '92%'}}></div>
+          </div>
+          <span>Excellent - Top 15%</span>
+        </div>
+
+        <div className="interactive-stats">
+          <div className="stat-item">
+            <span>💼 Skill Match</span>
+            <div className="stat-value">88%</div>
+            <span>Industry Demand</span>
+          </div>
+          <div className="stat-item">
+            <span>⚡ Response Rate</span>
+            <div className="stat-value">42%</div>
+            <span>Expected</span>
+          </div>
+          <div className="stat-item">
+            <span>💰 Salary Range</span>
+            <div className="stat-value">₹6-8L</div>
+            <span>PA</span>
+          </div>
+          <div className="stat-item">
+            <span>🏆 Market Rank</span>
+            <div className="stat-value">Top 15%</div>
+            <span>Among Peers</span>
+          </div>
+        </div>
+
+        <div className="prediction-card">
+          <h4>🎯 Hiring Prediction</h4>
+          <div className="prediction-status">STRONG HIRE</div>
+          <p>High probability of selection based on skill match and profile completeness</p>
+        </div>
+      </div>
+    );
+
+    const renderComparison = () => (
+      <div className="recruiter-content">
+        <h4>📊 Competitive Analysis</h4>
+        
+        <div className="comparison-chart">
+          <div className="chart-bar-container">
+            <div className="chart-bar user-bar" style={{height: '85%'}}></div>
+            <div className="chart-label">You (85%)</div>
+          </div>
+          <div className="chart-bar-container">
+            <div className="chart-bar" style={{height: '65%'}}></div>
+            <div className="chart-label">Avg (65%)</div>
+          </div>
+          <div className="chart-bar-container">
+            <div className="chart-bar" style={{height: '92%'}}></div>
+            <div className="chart-label">Top 10%</div>
+          </div>
+          <div className="chart-bar-container">
+            <div className="chart-bar" style={{height: '78%'}}></div>
+            <div className="chart-label">Peers</div>
+          </div>
+        </div>
+
+        <div className="prediction-card">
+          <h4>🎯 Performance Insights</h4>
+          <ul>
+            <li>✅ 25% above average candidates</li>
+            <li>✅ Strong technical skills foundation</li>
+            <li>✅ Excellent profile completeness</li>
+            <li>💡 Consider adding more projects</li>
+          </ul>
+        </div>
+      </div>
+    );
+
+    const renderSkillsAnalysis = () => (
+      <div className="recruiter-content">
+        <h4>🔍 Skills Radar Analysis</h4>
+        
+        <div className="radar-chart">
+          <div className="radar-grid"></div>
+          <div className="radar-grid" style={{width: '80%', height: '80%', top: '10%', left: '10%'}}></div>
+          <div className="radar-grid" style={{width: '60%', height: '60%', top: '20%', left: '20%'}}></div>
+          
+          <div className="radar-point" style={{top: '20%', left: '50%'}}></div>
+          <div className="radar-point" style={{top: '50%', left: '80%'}}></div>
+          <div className="radar-point" style={{top: '80%', left: '50%'}}></div>
+          <div className="radar-point" style={{top: '50%', left: '20%'}}></div>
+          <div className="radar-point" style={{top: '40%', left: '60%'}}></div>
+          
+          <div className="radar-line" style={{transform: 'rotate(0deg)'}}></div>
+          <div className="radar-line" style={{transform: 'rotate(72deg)'}}></div>
+          <div className="radar-line" style={{transform: 'rotate(144deg)'}}></div>
+          <div className="radar-line" style={{transform: 'rotate(216deg)'}}></div>
+          <div className="radar-line" style={{transform: 'rotate(288deg)'}}></div>
+        </div>
+
+        <div className="prediction-card">
+          <h4>🎯 Skills Assessment</h4>
+          <div className="interactive-stats">
+            <div className="stat-item">
+              <span>Technical</span>
+              <div className="stat-value">85%</div>
+            </div>
+            <div className="stat-item">
+              <span>Communication</span>
+              <div className="stat-value">78%</div>
+            </div>
+            <div className="stat-item">
+              <span>Projects</span>
+              <div className="stat-value">70%</div>
+            </div>
+            <div className="stat-item">
+              <span>Learning</span>
+              <div className="stat-value">90%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+
+    const renderHiringPredictor = () => (
+      <div className="recruiter-content">
+        <h4>🤖 AI Hiring Predictor</h4>
+        
+        <div className="recruiter-metric">
+          <span>Probability of Selection</span>
+          <div className="metric-value" style={{color: '#4ecdc4'}}>87%</div>
+          <div className="score-meter">
+            <div className="score-fill" style={{width: '87%', background: 'linear-gradient(90deg, #4ecdc4, #44a08d)'}}></div>
+          </div>
+        </div>
+
+        <div className="prediction-card">
+          <h4>📈 Prediction Factors</h4>
+          <ul>
+            <li>✅ Strong skill match with job requirements</li>
+            <li>✅ Excellent profile completeness</li>
+            <li>✅ Good academic background</li>
+            <li>✅ Active learning attitude</li>
+            <li>💡 Add 2-3 more projects</li>
+          </ul>
+        </div>
+
+        <div className="interactive-stats">
+          <div className="stat-item">
+            <span>🚀 Timeline</span>
+            <div className="stat-value">2-4 Weeks</div>
+            <span>Expected Offer</span>
+          </div>
+          <div className="stat-item">
+            <span>💼 Best Fit</span>
+            <div className="stat-value">Startups</div>
+            <span>MNCs</span>
+          </div>
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="recruiter-view-overlay">
+        <div className="recruiter-view">
+          <div className="recruiter-header">
+            <h3>👨‍💼 Recruiter Dashboard</h3>
+            <button onClick={() => setShowRecruiterView(false)}>×</button>
+          </div>
+
+          <div className="demo-controls">
+            <button 
+              className={`demo-control-btn ${recruiterViewTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setRecruiterViewTab('overview')}
+            >
+              📊 Overview
+            </button>
+            <button 
+              className={`demo-control-btn ${recruiterViewTab === 'comparison' ? 'active' : ''}`}
+              onClick={() => setRecruiterViewTab('comparison')}
+            >
+              ⚔️ Comparison
+            </button>
+            <button 
+              className={`demo-control-btn ${recruiterViewTab === 'skills' ? 'active' : ''}`}
+              onClick={() => setRecruiterViewTab('skills')}
+            >
+              🔍 Skills
+            </button>
+            <button 
+              className={`demo-control-btn ${recruiterViewTab === 'predictor' ? 'active' : ''}`}
+              onClick={() => setRecruiterViewTab('predictor')}
+            >
+              🤖 Predictor
+            </button>
+          </div>
+
+          {recruiterViewTab === 'overview' && renderOverview()}
+          {recruiterViewTab === 'comparison' && renderComparison()}
+          {recruiterViewTab === 'skills' && renderSkillsAnalysis()}
+          {recruiterViewTab === 'predictor' && renderHiringPredictor()}
+
+          <div style={{textAlign: 'center', marginTop: '20px', opacity: '0.7', fontSize: '0.9em'}}>
+            🔄 Live analysis - Auto updates every 3 seconds
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="profile-container">
-      {/* Top Navigation Bar */}
+      <SmartNotifications />
+      {showRecruiterView && <RecruiterView />}
+
       <header className="dashboard-top-nav">
         <div className="nav-left">
           <h1>DISHAA</h1>
@@ -433,7 +720,6 @@ const Profile = () => {
         </div>
       </header>
 
-      {/* Feedback Section */}
       {showFeedback && (
         <div className="feedback-section">
           <div className="feedback-container">
@@ -520,7 +806,6 @@ const Profile = () => {
           <p>Manage your profile information and preferences</p>
         </div>
 
-        {/* Profile Completion */}
         <div className="profile-completion-section">
           <h3>Profile Completion</h3>
           <div className="progress-container">
@@ -531,7 +816,80 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Achievements Section */}
+        <div className="profile-section ai-recommendations hover-glow">
+          <div className="ai-header">
+            <h3>🤖 AI-Powered Career Recommendations</h3>
+            <span className="ai-badge">LIVE ANALYSIS</span>
+          </div>
+          <div className="ai-suggestions">
+            <div className="ai-suggestion">
+              <h4>🎯 Based on Your Skills</h4>
+              <p>Frontend Developer roles match <strong>85%</strong> with your profile</p>
+              <p>Expected Salary: ₹6-8 LPA</p>
+              <button 
+                className="demo-button"
+                onClick={() => handleAddAISkill('React Native')}
+                style={{marginTop: '10px', padding: '8px 16px', fontSize: '12px'}}
+              >
+                Add React Native
+              </button>
+            </div>
+            <div className="ai-suggestion">
+              <h4>🚀 Growth Opportunities</h4>
+              <p>Learn <strong>React Native</strong> to increase job matches by 40%</p>
+              <p>Add <strong>TypeScript</strong> for better opportunities</p>
+              <button 
+                className="demo-button"
+                onClick={() => handleAddAISkill('TypeScript')}
+                style={{marginTop: '10px', padding: '8px 16px', fontSize: '12px'}}
+              >
+                Add TypeScript
+              </button>
+            </div>
+            <div className="ai-suggestion">
+              <h4>📈 Market Trends</h4>
+              <p>Your skills are in <strong>top 20%</strong> demand</p>
+              <p>Remote opportunities: <strong>High</strong></p>
+              <button 
+                className="demo-button"
+                onClick={() => handleAddAISkill('AWS')}
+                style={{marginTop: '10px', padding: '8px 16px', fontSize: '12px'}}
+              >
+                Add AWS
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-section market-trends hover-glow">
+          <div className="trends-header">
+            <h3>📊 Real-time Market Trends</h3>
+            <span className="trend-badge">LIVE DATA</span>
+          </div>
+          <div className="trends-grid">
+            <div className="trend-item">
+              <span>React Jobs</span>
+              <div className="trend-value">+32%</div>
+              <span>Growth this month</span>
+            </div>
+            <div className="trend-item">
+              <span>Average Salary</span>
+              <div className="trend-value">₹8.2L</div>
+              <span>For your skills</span>
+            </div>
+            <div className="trend-item">
+              <span>Remote Jobs</span>
+              <div className="trend-value">{marketTrends.remoteJobs}</div>
+              <span>Available now</span>
+            </div>
+            <div className="trend-item">
+              <span>Hiring Companies</span>
+              <div className="trend-value">{marketTrends.hiringCompanies}</div>
+              <span>Active recruiters</span>
+            </div>
+          </div>
+        </div>
+
         <div className="profile-section">
           <div className="section-header">
             <h2>Achievements</h2>
@@ -542,7 +900,6 @@ const Profile = () => {
           <p>Complete tasks to unlock special badges and showcase your progress</p>
           
           <div className="achievements-container">
-            {/* Profile Completer Badge */}
             <div className={`achievement-badge ${achievements.profileCompleter ? 'earned' : 'locked'}`}>
               <span className="badge-icon">🏆</span>
               <span className="badge-name">Profile Completer</span>
@@ -552,7 +909,6 @@ const Profile = () => {
               )}
             </div>
             
-            {/* Skill Master Badge */}
             <div className={`achievement-badge ${achievements.skillMaster ? 'earned' : 'locked'}`}>
               <span className="badge-icon">⭐</span>
               <span className="badge-name">Skill Master</span>
@@ -562,7 +918,6 @@ const Profile = () => {
               )}
             </div>
             
-            {/* Resume Ready Badge */}
             <div className={`achievement-badge ${achievements.resumeReady ? 'earned' : 'locked'}`}>
               <span className="badge-icon">📄</span>
               <span className="badge-name">Resume Ready</span>
@@ -572,7 +927,6 @@ const Profile = () => {
               )}
             </div>
             
-            {/* Social Butterfly Badge */}
             <div className={`achievement-badge ${achievements.socialButterfly ? 'earned' : 'locked'}`}>
               <span className="badge-icon">🦋</span>
               <span className="badge-name">Social Butterfly</span>
@@ -582,7 +936,6 @@ const Profile = () => {
               )}
             </div>
             
-            {/* Detail Oriented Badge */}
             <div className={`achievement-badge ${achievements.detailOriented ? 'earned' : 'locked'}`}>
               <span className="badge-icon">📝</span>
               <span className="badge-name">Detail Oriented</span>
@@ -596,76 +949,313 @@ const Profile = () => {
           </div>
         </div>
 
+        <div className="profile-section competitive-analysis hover-glow">
+          <h3>🏆 Competitive Analysis</h3>
+          <p>How you compare with other candidates in your field</p>
+          
+          <div className="analysis-chart">
+            <div className="chart-bar user-bar" style={{height: '85%'}}>
+              <div className="chart-label">You (85%)</div>
+            </div>
+            <div className="chart-bar" style={{height: '65%'}}>
+              <div className="chart-label">Average (65%)</div>
+            </div>
+            <div className="chart-bar" style={{height: '92%'}}>
+              <div className="chart-label">Top 10% (92%)</div>
+            </div>
+            <div className="chart-bar" style={{height: '78%'}}>
+              <div className="chart-label">Peers (78%)</div>
+            </div>
+          </div>
+        </div>
 
-      {/* Skill Gap Analysis Section */}
-<div className="profile-section">
-  <div className="section-header">
-    <h2>Skill Gap Analysis</h2>
-  </div>
-  <p>Based on your current skills, here's what you're missing for popular internships:</p>
-  
-  <div className="skill-gap-container">
-    {/* Frontend Developer Internship */}
-    <div className="skill-gap-item">
-      <h4>Frontend Developer Intern</h4>
-      <div className="required-skills">
-        <span className="skill-label">Required: </span>
-        <span className="skill-tag">React</span>
-        <span className="skill-tag">JavaScript</span>
-        <span className="skill-tag">CSS</span>
-        <span className="skill-tag">HTML</span>
-      </div>
-      <div className="missing-skills">
-        <span className="skill-label">You're missing: </span>
-        {!profileData.skills.some(skill => skill.toLowerCase().includes('html')) && (
-          <span className="missing-skill-tag">HTML</span>
-        )}
-        {!profileData.skills.some(skill => skill.toLowerCase().includes('react')) && (
-          <span className="missing-skill-tag">React</span>
-        )}
-        {!profileData.skills.some(skill => skill.toLowerCase().includes('javascript')) && (
-          <span className="missing-skill-tag">JavaScript</span>
-        )}
-        {!profileData.skills.some(skill => skill.toLowerCase().includes('css')) && (
-          <span className="missing-skill-tag">CSS</span>
-        )}
-      </div>
-    </div>
+        <div className="performance-metrics">
+          <div className="metric-card hover-glow">
+            <span>Profile Strength</span>
+            <div className="metric-value">{profileCompletion}%</div>
+            <span className="metric-change">+5% this week</span>
+          </div>
+          <div className="metric-card hover-glow">
+            <span>Skill Match</span>
+            <div className="metric-value">87%</div>
+            <span className="metric-change">Industry demand</span>
+          </div>
+          <div className="metric-card hover-glow">
+            <span>Response Rate</span>
+            <div className="metric-value">42%</div>
+            <span className="metric-change">Expected</span>
+          </div>
+          <div className="metric-card hover-glow">
+            <span>Market Rank</span>
+            <div className="metric-value">Top 15%</div>
+            <span className="metric-change">Among peers</span>
+          </div>
+        </div>
 
-    {/* Data Science Internship */}
-    <div className="skill-gap-item">
-      <h4>Data Science Intern</h4>
-      <div className="required-skills">
-        <span className="skill-label">Required: </span>
-        <span className="skill-tag">Python</span>
-        <span className="skill-tag">Machine Learning</span>
-        <span className="skill-tag">SQL</span>
-        <span className="skill-tag">Data Analysis</span>
-      </div>
-      <div className="missing-skills">
-        <span className="skill-label">You're missing: </span>
-        {!profileData.skills.some(skill => skill.toLowerCase().includes('python')) && (
-          <span className="missing-skill-tag">Python</span>
-        )}
-        {!profileData.skills.some(skill => skill.toLowerCase().includes('machine learning')) && (
-          <span className="missing-skill-tag">Machine Learning</span>
-        )}
-        {!profileData.skills.some(skill => skill.toLowerCase().includes('sql')) && (
-          <span className="missing-skill-tag">SQL</span>
-        )}
-        {!profileData.skills.some(skill => skill.toLowerCase().includes('data analysis')) && (
-          <span className="missing-skill-tag">Data Analysis</span>
-        )}
-      </div>
-    </div>
+        <div className="profile-section">
+          <div className="section-header">
+            <h2>Skill Gap Analysis & Learning Roadmap</h2>
+          </div>
+          <p>Based on your current skills, here's what you're missing for popular internships. We'll help you bridge the gap!</p>
+          
+          <div className="skill-gap-container">
+            <div className="skill-gap-item">
+              <h4>🚀 Frontend Developer Intern</h4>
+              <div className="required-skills">
+                <span className="skill-label">Required Skills: </span>
+                <span className="skill-tag">React</span>
+                <span className="skill-tag">JavaScript</span>
+                <span className="skill-tag">CSS</span>
+                <span className="skill-tag">HTML</span>
+              </div>
+              
+              <div className="missing-skills">
+                <span className="skill-label">You're missing: </span>
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('html')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">HTML</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/BsDoLVMnmZs" target="_blank" rel="noopener noreferrer">HTML in 1 Hour - CodeWithHarry</a>
+                        <a href="https://youtu.be/pQN-pnXPaVg" target="_blank" rel="noopener noreferrer">HTML Full Course - FreeCodeCamp</a>
+                        <a href="https://youtu.be/HcOc7P5BMi4" target="_blank" rel="noopener noreferrer">HTML Tutorial - Apna College</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('react')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">React</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/bMknfKXIFA8" target="_blank" rel="noopener noreferrer">React Course - FreeCodeCamp</a>
+                        <a href="https://youtu.be/tiLWCNFzThE" target="_blank" rel="noopener noreferrer">React in 1 Video - CodeWithHarry</a>
+                        <a href="https://youtu.be/RGKi6LSPDLU" target="_blank" rel="noopener noreferrer">React Tutorial - Chai aur Code</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('javascript')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">JavaScript</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/hKB-YGF14SY" target="_blank" rel="noopener noreferrer">JavaScript - Apna College</a>
+                        <a href="https://youtu.be/W6NZfCO5SIk" target="_blank" rel="noopener noreferrer">JavaScript Beginners - Programming with Mosh</a>
+                        <a href="https://youtu.be/HgXQiI6fXhQ" target="_blank" rel="noopener noreferrer">JS in One Video - CodeWithHarry</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('css')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">CSS</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/Edsxf_NBFrw" target="_blank" rel="noopener noreferrer">CSS Tutorial - CodeWithHarry</a>
+                        <a href="https://youtu.be/1PnVor36_40" target="_blank" rel="noopener noreferrer">CSS in 1 Hour - FreeCodeCamp</a>
+                        <a href="https://youtu.be/Ar0cig2aY4Y" target="_blank" rel="noopener noreferrer">CSS Complete Guide - Thapa Technical</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
-    {/* Add more internship types as needed */}
-  </div>
-  
-  <div className="suggestion-box">
-    <p>💡 <strong>Tip:</strong> Add the missing skills to your profile to qualify for more internships!</p>
-  </div>
-</div>
+            <div className="skill-gap-item">
+              <h4>📊 Data Science Intern</h4>
+              <div className="required-skills">
+                <span className="skill-label">Required Skills: </span>
+                <span className="skill-tag">Python</span>
+                <span className="skill-tag">Machine Learning</span>
+                <span className="skill-tag">SQL</span>
+                <span className="skill-tag">Data Analysis</span>
+              </div>
+              
+              <div className="missing-skills">
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('python')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">Python</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/gfDE2a7MKjA" target="_blank" rel="noopener noreferrer">Python Tutorial - CodeWithHarry</a>
+                        <a href="https://youtu.be/_uQrJ0TkZlc" target="_blank" rel="noopener noreferrer">Python for Beginners - Mosh</a>
+                        <a href="https://youtu.be/7wnove7K-ZQ" target="_blank" rel="noopener noreferrer">Python in 1 Video - Thapa Technical</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('machine learning')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">Machine Learning</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/GwIo3gDZCVQ" target="_blank" rel="noopener noreferrer">ML Tutorial - Krish Naik</a>
+                        <a href="https://youtu.be/JcI5Vnw0b2c" target="_blank" rel="noopener noreferrer">ML for Beginners - CodeWithHarry</a>
+                        <a href="https://youtu.be/ukzFI9rgwfU" target="_blank" rel="noopener noreferrer">ML in Python - NeuralNine</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('sql')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">SQL</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/7S_tz1z_5bA" target="_blank" rel="noopener noreferrer">SQL Tutorial - Apna College</a>
+                        <a href="https://youtu.be/HXV3zeQKqGY" target="_blank" rel="noopener noreferrer">SQL Full Course - FreeCodeCamp</a>
+                        <a href="https://youtu.be/pFq1pgli0OQ" target="_blank" rel="noopener noreferrer">SQL in 1 Video - CodeWithHarry</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('data analysis')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">Data Analysis</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/r-uOLxNrNk8" target="_blank" rel="noopener noreferrer">Data Analysis with Python - FreeCodeCamp</a>
+                        <a href="https://youtu.be/daFfC_7gJDU" target="_blank" rel="noopener noreferrer">Data Analysis Tutorial - CodeWithHarry</a>
+                        <a href="https://youtu.be/-1Dm0PL_ykA" target="_blank" rel="noopener noreferrer">Pandas Tutorial - Krish Naik</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="skill-gap-item">
+              <h4>⚙️ Backend Developer Intern</h4>
+              <div className="required-skills">
+                <span className="skill-label">Required Skills: </span>
+                <span className="skill-tag">Node.js</span>
+                <span className="skill-tag">MongoDB</span>
+                <span className="skill-tag">Express.js</span>
+                <span className="skill-tag">API Development</span>
+              </div>
+              
+              <div className="missing-skills">
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('node')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">Node.js</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/BSO9C8Z-YV8" target="_blank" rel="noopener noreferrer">Node.js Tutorial - CodeWithHarry</a>
+                        <a href="https://youtu.be/Oe421EPjeBE" target="_blank" rel="noopener noreferrer">Node.js Full Course - FreeCodeCamp</a>
+                        <a href="https://youtu.be/ldYcgPKEZC8" target="_blank" rel="noopener noreferrer">Node.js in 1 Video - Thapa Technical</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('mongodb')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">MongoDB</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/9OPP_1eAENg" target="_blank" rel="noopener noreferrer">MongoDB Tutorial - FreeCodeCamp</a>
+                        <a href="https://youtu.be/Y2Tuf3mzfw8" target="_blank" rel="noopener noreferrer">MongoDB with Node.js - CodeWithHarry</a>
+                        <a href="https://youtu.be/WW3b1KmnvAg" target="_blank" rel="noopener noreferrer">MongoDB Complete Course - Thapa Technical</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('express')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">Express.js</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/SccSCuHhOw0" target="_blank" rel="noopener noreferrer">Express.js Tutorial - CodeWithHarry</a>
+                        <a href="https://youtu.be/SBvmnHTQIPY" target="_blank" rel="noopener noreferrer">Express.js in 1 Video - Thapa Technical</a>
+                        <a href="https://youtu.be/L72fhGm1tfE" target="_blank" rel="noopener noreferrer">Express.js Crash Course - Traversy Media</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!profileData.skills.some(skill => skill.toLowerCase().includes('api')) && (
+                  <div className="missing-skill-with-roadmap">
+                    <span className="missing-skill-tag">API Development</span>
+                    <div className="learning-roadmap">
+                      <strong>📹 YouTube Resources:</strong>
+                      <div className="platform-links">
+                        <a href="https://youtu.be/pKd0Rpw7O48" target="_blank" rel="noopener noreferrer">REST API Tutorial - CodeWithHarry</a>
+                        <a href="https://youtu.be/fsCjFHuMXj0" target="_blank" rel="noopener noreferrer">API Development - FreeCodeCamp</a>
+                        <a href="https://youtu.be/GZvSYJDk-us" target="_blank" rel="noopener noreferrer">REST API Concepts - Gaurav Sen</a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="suggestion-box">
+            <h4>🎯 Recommended Learning Strategy:</h4>
+            <ul>
+              <li><strong>Step 1:</strong> Watch YouTube tutorials (2-3 weeks per skill)</li>
+              <li><strong>Step 2:</strong> Practice with small projects</li>
+              <li><strong>Step 3:</strong> Build portfolio projects</li>
+              <li><strong>Step 4:</strong> Add skills to profile and apply for internships</li>
+            </ul>
+            
+            <div className="platform-recommendations">
+              <h4>📚 Popular Indian YouTube Channels:</h4>
+              <div className="platform-tags">
+                <a href="https://www.youtube.com/@CodeWithHarry" target="_blank" rel="noopener noreferrer" className="platform-tag">CodeWithHarry</a>
+                <a href="https://www.youtube.com/@ApnaCollegeOfficial" target="_blank" rel="noopener noreferrer" className="platform-tag">Apna College</a>
+                <a href="https://www.youtube.com/@ThapaTechnical" target="_blank" rel="noopener noreferrer" className="platform-tag">Thapa Technical</a>
+                <a href="https://www.youtube.com/@chaiaurcode" target="_blank" rel="noopener noreferrer" className="platform-tag">Chai aur Code</a>
+                <a href="https://www.youtube.com/@CodingShuttle" target="_blank" rel="noopener noreferrer" className="platform-tag">Coding Shuttle</a>
+                <a href="https://www.youtube.com/@Krishnaik06" target="_blank" rel="noopener noreferrer" className="platform-tag">Krish Naik</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="profile-section interactive-demo hover-glow">
+          <h3>🎮 Interactive Recruiter Dashboard</h3>
+          <p>Experience how recruiters analyze your profile in real-time with AI-powered insights</p>
+          
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', margin: '20px 0'}}>
+            <div style={{textAlign: 'center'}}>
+              <div style={{fontSize: '3em'}}>👨‍💼</div>
+              <h4>Recruiter View</h4>
+              <p>See your profile through recruiter's eyes</p>
+            </div>
+            <div style={{textAlign: 'center'}}>
+              <div style={{fontSize: '3em'}}>🤖</div>
+              <h4>AI Analysis</h4>
+              <p>Real-time skills assessment</p>
+            </div>
+          </div>
+
+          <button className="demo-button pulse" onClick={handleLaunchRecruiterView}>
+            🚀 Launch Interactive Dashboard
+          </button>
+          
+          <div style={{marginTop: '15px', fontSize: '0.9em', opacity: '0.8'}}>
+            <strong>Features:</strong> Live scoring • Competitive analysis • Hiring prediction • Skills radar
+          </div>
+        </div>
 
         <div className="profile-sections">
           {/* Basic Information Section */}
@@ -720,7 +1310,6 @@ const Profile = () => {
             </div>
 
             {!isEditing ? (
-              // VIEW MODE - Display Only
               <div className="read-only-info">
                 <div className="info-row">
                   <span className="info-label">First Name:</span>
@@ -744,7 +1333,6 @@ const Profile = () => {
                 </div>
               </div>
             ) : (
-              // EDIT MODE - Form Fields (FULLY EDITABLE)
               <>
                 <div className="form-row">
                   <div className="form-group">
@@ -783,7 +1371,7 @@ const Profile = () => {
                     />
                 </div>
 
-                <div className="form-group">
+                {/* <div className="form-group">
                   <label>Phone Number</label>
                   <input
                     type="tel"
@@ -791,9 +1379,33 @@ const Profile = () => {
                     value={profileData.phone}
                     onChange={handleInputChange}
                     className="profile-input-editable"
-                    placeholder="+91 98765 43210"
+                    placeholder="Enter Your Mob."
                   />
-                </div>
+                </div> */}
+
+
+<div className="form-group">
+  <label>Phone Number</label>
+  <input
+    type="tel"
+    name="phone"
+    value={profileData.phone}
+    onChange={handleInputChange}
+    onKeyPress={(e) => {
+      
+      if (!/[0-9]/.test(e.key) && e.key !== "Backspace" && e.key !== "Enter") {
+        e.preventDefault();
+      }
+    }}
+    className="profile-input-editable"
+    placeholder="+91 98765 43210" 
+    pattern="[0-9]*" 
+    maxLength="10" 
+  />
+</div>
+
+
+
 
                 <div className="form-group">
                   <label>Location</label>
@@ -822,7 +1434,6 @@ const Profile = () => {
             </div>
             
             {!isEditing ? (
-              // VIEW MODE
               <div className="read-only-info">
                 <div className="info-row">
                   <span className="info-label">Degree:</span>
@@ -842,7 +1453,6 @@ const Profile = () => {
                 </div>
               </div>
             ) : (
-              // EDIT MODE
               <>
                 <div className="form-row">
                   <div className="form-group">
@@ -1105,7 +1715,6 @@ const Profile = () => {
                 </div>
               </div>
             ) : (
-              // EDIT MODE
               <>
                 <div className="form-group">
                   <label>Preferred Sector</label>
@@ -1160,7 +1769,6 @@ const Profile = () => {
             )}
           </div>
 
-          {/* Save Button */}
           {isEditing && (
             <div className="profile-actions">
               <button onClick={handleSaveProfile} className="save-profile-btn">
@@ -1175,3 +1783,19 @@ const Profile = () => {
 };
 
 export default Profile;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

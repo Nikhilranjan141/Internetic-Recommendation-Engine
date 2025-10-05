@@ -1,7 +1,9 @@
 import React from "react";
+import { useTranslation } from '../hooks/useTranslation';
 import "./WhyChoose.css";
 
 const WhyChoose = () => {
+   const { t } = useTranslation();
   return (
     <section className="why-choose">
       <h2>Why Choose DISHAA?</h2>

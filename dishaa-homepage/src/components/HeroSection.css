@@ -1,3 +1,6 @@
+/* src/components/HeroSection.css */
+
+/* Your Existing Styles */
 .hero {
   background-image: url('../assets/background.png');
   background-size: cover;
@@ -12,7 +15,6 @@
   color: #122c54;
 }
 
-
 .overlay {
   background-color: transparent; 
   padding: 0;
@@ -20,7 +22,6 @@
   max-width: 100%;
   width: 100%;
 }
-
 
 .top-heading {
   font-size: 22px;
@@ -52,7 +53,6 @@
   margin-bottom: 40px;
 }
 
-
 .start-btn {
   background-color: #ff6600;   
   color: white;
@@ -68,7 +68,6 @@
 .start-btn:hover {
   background-color: #e65c00;   
 }
-
 
 .demo-btn {
   background-color: white;
@@ -86,7 +85,6 @@
   border-color: #999;
 }
 
-
 .stats {
   display: flex;
   justify-content: space-around;
@@ -102,4 +100,111 @@
 .stats strong {
   font-size: 24px;
   color: #ff7b29;
+}
+
+/* New Video Modal Styles */
+.video-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.video-modal-content {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  position: relative;
+  animation: modalSlideIn 0.3s ease;
+}
+
+.close-video-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #ff7b29;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.3s ease;
+}
+
+.close-video-btn:hover {
+  background: #e65c00;
+}
+
+.demo-video {
+  width: 100%;
+  border-radius: 10px;
+  max-height: 70vh;
+}
+
+.video-info {
+  text-align: center;
+  color: #333;
+  padding: 15px 0;
+}
+
+.video-info h3 {
+  margin-bottom: 10px;
+  color: #122c54;
+  font-size: 1.5rem;
+}
+
+.video-info p {
+  color: #666;
+  font-size: 1rem;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-heading {
+    font-size: 2rem;
+  }
+  
+  .cta-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .start-btn, .demo-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .video-modal-content {
+    width: 95%;
+    padding: 15px;
+    margin: 10px;
+  }
+  
+  .stats {
+    flex-direction: column;
+    gap: 15px;
+  }
 }
