@@ -22,6 +22,14 @@ This project provides a simple, mobile-friendly, and intelligent recommendation 
 
 💡 Lightweight Integration — Can be embedded into the existing PM Internship portal
 
-our prototype link http://localhost:5173/
+our prototype link : http://localhost:5173/
+
+## Youtube demo video link : https://youtu.be/6Gb8jGP3fmI
+
+
+## Team behind the project:
+
+<a href="https://github.com/ssks23072004">
+  <img src="https://avatars.githubusercontent.com/ssks23072004" width="50" height="50">
 
 
